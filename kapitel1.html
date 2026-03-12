@@ -89,7 +89,8 @@
   .year-chip.selected { background:var(--pink); color:white; border-color:var(--pink); }
 
   /* Buttons */
-  .btn { padding:12px 28px; border:none; border-radius:10px; font-size:1rem; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; transition:all .2s; }
+  .btn-export { background:#16a34a; color:white; }
+  .btn-export:hover { background:#15803d; }
   .btn-pink { background:var(--pink); color:white; }
   .btn-pink:hover { background:var(--pink-dark); }
   .btn-outline { background:white; color:var(--pink); border:2px solid var(--pink); }
@@ -123,8 +124,8 @@
   .bs-feedback.warn { background:#FFF8E1; color:#F57F17; border-left: 3px solid #F9A825; }
 
   .kontenplan-toggle { background:none; border:1px solid var(--pink); color:var(--pink); border-radius:8px; padding:6px 14px; font-size:.82rem; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; margin-bottom:12px; }
-  .kontenplan-box { display:none; background:#fafafa; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; font-size:.82rem; line-height:1.8; column-count:2; }
-  @media(max-width:600px) { .kontenplan-box { column-count:1; } }
+  .kontenplan-box { display:none; background:#fafafa; border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:16px; font-size:.82rem; line-height:1.9; }
+  .kp-konto { display:inline-block; min-width:220px; }
   .kontenplan-box strong { color:var(--pink-dark); }
 
   .badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:.75rem; font-weight:700; }
@@ -204,7 +205,18 @@
           </div>
         </div>
         <div class="aw-result" id="aw-result" style="display:none;"></div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div class="input-group" style="flex:1;min-width:200px;max-width:280px;">
+            <label class="input-label">Dein berechneter Anschaffungswert (€)</label>
+            <input class="input-field" id="aw-eingabe" type="number" step="0.01" placeholder="€ ...">
+          </div>
+          <button class="btn btn-pink" style="margin-top:20px;" onclick="pruefeAW()">✓ AW prüfen</button>
+        </div>
+        <div class="feedback-box" id="aw-feedback"></div>
       </div>
+
+      <!-- Schritt 2 + 3: erst sichtbar nach korrektem AW -->
+      <div id="schritte-2-3" style="display:none;">
 
       <!-- Schritt 2: AfA Tabelle -->
       <div class="card">
@@ -223,9 +235,12 @@
         <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
           <button class="btn btn-pink" onclick="pruefeAlles()">✓ Alles prüfen</button>
           <button class="btn btn-outline" onclick="resetAfa()">↺ Zurücksetzen</button>
+          <button class="btn btn-export" id="afa-export-btn" onclick="exportAfaExcel()" style="display:none;">⬇ Als Excel speichern</button>
         </div>
         <div class="feedback-box" id="afa-feedback"></div>
       </div>
+
+      </div><!-- end schritte-2-3 -->
     </div>
   </div>
 
@@ -251,6 +266,7 @@
         <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
           <button class="btn btn-pink" onclick="pruefeAlleBuchungen()">✓ Alle prüfen</button>
           <button class="btn btn-outline" onclick="resetBuchungen()">↺ Zurücksetzen</button>
+          <button class="btn btn-export" id="bs-export-btn" onclick="exportBuchungenExcel()" style="display:none;">⬇ Als Excel speichern</button>
         </div>
         <div class="feedback-box" id="buchung-feedback"></div>
       </div>
@@ -259,6 +275,8 @@
 
   <footer>Dieses Tool dient ausschließlich Unterrichtszwecken. © GALS</footer>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 // AUTH
@@ -344,6 +362,12 @@ function ladeAfaAufgabe() {
   document.getElementById('aw-result').style.display = 'none';
   berechneterAW = 0;
   selectedYears = [];
+  // AW-Eingabe zurücksetzen, Schritte 2+3 verstecken
+  const awEingabe = document.getElementById('aw-eingabe');
+  if (awEingabe) { awEingabe.value = ''; awEingabe.classList.remove('correct','wrong'); }
+  const awFb = document.getElementById('aw-feedback');
+  if (awFb) { awFb.className = 'feedback-box'; awFb.textContent = ''; }
+  document.getElementById('schritte-2-3').style.display = 'none';
   baueAfaTabelle();
   baueYearChips();
   document.getElementById('afa-feedback').className = 'feedback-box';
@@ -554,12 +578,136 @@ function pruefeAlles() {
     fb.className = 'feedback-box show err';
     fb.innerHTML = `❌ ${richtig} von ${gesamt} Feldern richtig.<br><strong>Korrekturen:</strong><br>` + fehler.map(f => `• ${f}`).join('<br>');
   }
+  document.getElementById('afa-export-btn').style.display = 'inline-block';
 }
 
 function resetAfa() {
   document.querySelectorAll('.afa-input, .buchung-field').forEach(el => { el.value = ''; el.classList.remove('correct','wrong'); });
   const fb = document.getElementById('afa-feedback');
   fb.className = 'feedback-box'; fb.textContent = '';
+  document.getElementById('afa-export-btn').style.display = 'none';
+  // AW-Eingabe und Schritte 2+3 zurücksetzen
+  const awEingabe = document.getElementById('aw-eingabe');
+  if (awEingabe) { awEingabe.value = ''; awEingabe.classList.remove('correct','wrong'); }
+  const awFb = document.getElementById('aw-feedback');
+  if (awFb) { awFb.className = 'feedback-box'; awFb.textContent = ''; }
+  document.getElementById('schritte-2-3').style.display = 'none';
+  berechneterAW = 0;
+}
+
+function pruefeAW() {
+  if (!aktAufgabe) return;
+  const eingabe = parseFloat(document.getElementById('aw-eingabe')?.value);
+  const korrekt = berechneAWKorrekt(aktAufgabe);
+  const fb = document.getElementById('aw-feedback');
+  const el = document.getElementById('aw-eingabe');
+  fb.classList.add('show');
+  if (isNaN(eingabe)) {
+    fb.className = 'feedback-box show err';
+    fb.textContent = '❌ Bitte einen Wert eingeben.';
+    return;
+  }
+  if (Math.abs(eingabe - korrekt) < 0.02) {
+    el.classList.add('correct'); el.classList.remove('wrong');
+    fb.className = 'feedback-box show ok';
+    fb.innerHTML = `✅ Richtig! Anschaffungswert = <strong>€ ${fmt(korrekt)}</strong> – weiter mit Schritt 2.`;
+    berechneterAW = korrekt;
+    baueAfaTabelle();
+    document.getElementById('schritte-2-3').style.display = 'block';
+  } else {
+    el.classList.add('wrong'); el.classList.remove('correct');
+    fb.className = 'feedback-box show err';
+    // Hinweis auf den Rechenweg ohne direkt die Lösung zu verraten
+    const a = aktAufgabe;
+    const netto = round2(a.brutto / (1 + a.ust / 100));
+    let hinweis = `Netto = Brutto ÷ 1,${a.ust} = € ${fmt(netto)}`;
+    if (a.skonto > 0) hinweis += ` → nach Skonto ${a.skonto}%: € ${fmt(round2(netto * (1 - a.skonto/100)))}`;
+    if (a.lieferkosten > 0) hinweis += ` + Lieferkosten € ${fmt(a.lieferkosten)}`;
+    fb.innerHTML = `❌ Nicht ganz richtig. Tipp: ${hinweis}`;
+  }
+}
+
+// ============================================================
+// EXCEL EXPORT
+// ============================================================
+function exportAfaExcel() {
+  if (!aktAufgabe || !window._korrektRows) return;
+  const a = aktAufgabe;
+  const rows = window._korrektRows;
+  const wb = XLSX.utils.book_new();
+
+  // --- Blatt 1: Abschreibungstabelle ---
+  const afaData = [];
+  afaData.push([`Abschreibungstabelle – ${a.titel}`, '', '', '', '', '']);
+  afaData.push(['']);
+  // Header: Zeilenbeschriftung + Jahre
+  afaData.push(['', ...rows.map(r => r.jahr)]);
+  // 4 Zeilen: Schülerwerte vs. Lösung nebeneinander pro Jahr
+  const felder = [
+    { label: 'AW / BW 1.1. (€)', schülerKey: i => parseFloat(document.getElementById(`bw1-${i}`)?.value), lösungKey: r => r.bw1 },
+    { label: 'Abschreibungssatz (%)', schülerKey: i => parseFloat(document.getElementById(`afasatz-${i}`)?.value), lösungKey: r => r.afaSatz },
+    { label: 'Abschreibungsbetrag (€)', schülerKey: i => parseFloat(document.getElementById(`afa-${i}`)?.value), lösungKey: r => r.afa },
+    { label: 'BW 31.12. (€)', schülerKey: i => parseFloat(document.getElementById(`bw31-${i}`)?.value), lösungKey: r => r.bw31 },
+  ];
+  felder.forEach(f => {
+    afaData.push([`${f.label} – Deine Eingabe`, ...rows.map((_, i) => f.schülerKey(i) || '')]);
+    afaData.push([`${f.label} – Lösung`, ...rows.map(r => f.lösungKey(r))]);
+    afaData.push(['']);
+  });
+
+  // Buchungssätze in Blatt 1 unten anhängen
+  afaData.push(['Buchungssätze']);
+  afaData.push(['Jahr', 'Soll-Konto (Eingabe)', 'Soll-Betrag (Eingabe)', 'Haben-Konto (Eingabe)', 'Haben-Betrag (Eingabe)', 'Lösung']);
+  const buchIndices = window._buchungIndices || [];
+  buchIndices.forEach(idx => {
+    const row = rows[idx];
+    const label = idx === 0 ? '1. Jahr' : idx === 1 ? '2. Jahr' : 'Letztes Jahr';
+    const sk = document.getElementById(`bs-soll-kto-${idx}`)?.value || '';
+    const sb = document.getElementById(`bs-soll-bet-${idx}`)?.value || '';
+    const hk = document.getElementById(`bs-hab-kto-${idx}`)?.value || '';
+    const hb = document.getElementById(`bs-hab-bet-${idx}`)?.value || '';
+    afaData.push([`${label} (${row.jahr})`, sk, sb, hk, hb, `7020 / ${a.konto} | € ${fmt(row.afa)}`]);
+  });
+
+  const ws1 = XLSX.utils.aoa_to_sheet(afaData);
+  ws1['!cols'] = [{wch:35},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Abschreibung');
+
+  const datum = new Date().toLocaleDateString('de-AT').replace(/\./g,'-');
+  XLSX.writeFile(wb, `UFW-Uwe_Abschreibung_${datum}.xlsx`);
+}
+
+function exportBuchungenExcel() {
+  if (aktFirma === null) return;
+  const data = buchungsdaten[aktFirma];
+  const firma = firmen[aktFirma];
+  const wb = XLSX.utils.book_new();
+
+  const bsData = [];
+  bsData.push([`Buchungssätze – ${firma.icon} ${firma.name}`, '', '', '', '', '', '', '']);
+  bsData.push(['']);
+  bsData.push(['Nr.', 'Geschäftsfall', 'Soll-Kto 1 (Eingabe)', 'Betrag', 'Soll-Kto 2 (Eingabe)', 'Betrag', 'Haben-Kto 1 (Eingabe)', 'Betrag', 'Haben-Kto 2 (Eingabe)', 'Betrag', '✔ Lösung Soll', '✔ Lösung Haben']);
+
+  data.forEach((bs, i) => {
+    const sk0 = document.getElementById(`soll-kto-${i}-0`)?.value || '';
+    const sb0 = document.getElementById(`soll-bet-${i}-0`)?.value || '';
+    const sk1 = document.getElementById(`soll-kto-${i}-1`)?.value || '';
+    const sb1 = document.getElementById(`soll-bet-${i}-1`)?.value || '';
+    const hk0 = document.getElementById(`hab-kto-${i}-0`)?.value || '';
+    const hb0 = document.getElementById(`hab-bet-${i}-0`)?.value || '';
+    const hk1 = document.getElementById(`hab-kto-${i}-1`)?.value || '';
+    const hb1 = document.getElementById(`hab-bet-${i}-1`)?.value || '';
+    const lösungSoll = bs.soll.map(s => `${s[0]} | € ${fmt(s[1])}`).join(' + ');
+    const lösungHaben = bs.hab.map(h => `${h[0]} | € ${fmt(h[1])}`).join(' + ');
+    bsData.push([i+1, bs.text, sk0, sb0, sk1, sb1, hk0, hb0, hk1, hb1, lösungSoll, lösungHaben]);
+  });
+
+  const ws2 = XLSX.utils.aoa_to_sheet(bsData);
+  ws2['!cols'] = [{wch:4},{wch:45},{wch:12},{wch:10},{wch:12},{wch:10},{wch:12},{wch:10},{wch:12},{wch:10},{wch:30},{wch:30}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Buchungssätze');
+
+  const datum = new Date().toLocaleDateString('de-AT').replace(/\./g,'-');
+  XLSX.writeFile(wb, `UFW-Uwe_Buchungssaetze_${firma.name.replace(/\s/g,'_')}_${datum}.xlsx`);
 }
 
 // ============================================================
@@ -576,100 +724,141 @@ const firmen = [
 const buchungsdaten = [
   // Bäckerei Tirol
   [
-    { text: 'Kauf Mehl auf Ziel, netto € 800,–', soll: [['5100',800],['2500',160]], hab: [['3300',960]] },
-    { text: 'Zahlung Miete per Bank, netto € 1.200,–', soll: [['7400',1200],['2500',240]], hab: [['2800',1440]] },
-    { text: 'Verkauf Waren bar, netto € 500,–', soll: [['2700',600]], hab: [['4000',500],['3500',100]] },
-    { text: 'Kauf Backofen auf Ziel, netto € 8.000,–', soll: [['0400',8000],['2500',1600]], hab: [['3300',9600]] },
+    { text: 'Kauf Mehl auf Ziel, brutto € 960,– (USt 20%)', soll: [['5100',800],['2500',160]], hab: [['3300',960]] },
+    { text: 'Zahlung Miete per Bank, netto € 1.200,– (USt 20%)', soll: [['7400',1200],['2500',240]], hab: [['2800',1440]] },
+    { text: 'Verkauf Waren bar, brutto € 600,– (USt 20%)', soll: [['2700',600]], hab: [['4000',500],['3500',100]] },
+    { text: 'Kauf Backofen auf Ziel, netto € 8.000,– + USt 20% € 1.600,–', soll: [['0400',8000],['2500',1600]], hab: [['3300',9600]] },
     { text: 'Begleichung Lieferverbindlichkeit per Bank € 9.600,–', soll: [['3300',9600]], hab: [['2800',9600]] },
-    { text: 'Stromrechnung per Bank, netto € 300,–', soll: [['5630',300],['2500',60]], hab: [['2800',360]] },
-    { text: 'Verkauf auf Ziel, netto € 2.000,–', soll: [['2000',2400]], hab: [['4000',2000],['3500',400]] },
-    { text: 'Werbekosten per Bank, netto € 400,–', soll: [['7650',400],['2500',80]], hab: [['2800',480]] },
-    { text: 'Kauf Verpackungsmaterial auf Ziel, netto € 200,–', soll: [['1300',200],['2500',40]], hab: [['3300',240]] },
+    { text: 'Stromrechnung per Bank, netto € 300,– + USt 20% € 60,–', soll: [['5630',300],['2500',60]], hab: [['2800',360]] },
+    { text: 'Verkauf auf Ziel, brutto € 2.400,– (USt 20%)', soll: [['2000',2400]], hab: [['4000',2000],['3500',400]] },
+    { text: 'Werbekosten per Bank, netto € 400,– (USt 20%)', soll: [['7650',400],['2500',80]], hab: [['2800',480]] },
+    { text: 'Kauf Verpackungsmaterial auf Ziel, netto € 200,– + USt 20% € 40,–', soll: [['1300',200],['2500',40]], hab: [['3300',240]] },
     { text: 'Eingang Lieferforderung per Bank € 2.400,–', soll: [['2800',2400]], hab: [['2000',2400]] },
-    { text: 'Telefonrechnung per Bank, netto € 150,–', soll: [['7380',150],['2500',30]], hab: [['2800',180]] },
+    { text: 'Telefonrechnung per Bank, brutto € 180,– (USt 20%)', soll: [['7380',150],['2500',30]], hab: [['2800',180]] },
     { text: 'Abschreibung Backofen € 1.600,–', soll: [['7020',1600]], hab: [['0400',1600]] },
   ],
   // Autohaus Innsbruck
   [
-    { text: 'Kauf Gebrauchtwagen auf Ziel, netto € 12.000,–', soll: [['1600',12000],['2500',2400]], hab: [['3300',14400]] },
-    { text: 'Verkauf Auto bar, netto € 18.000,–', soll: [['2700',21600]], hab: [['4000',18000],['3500',3600]] },
-    { text: 'Kauf Büromaterial per Bank, netto € 250,–', soll: [['7600',250],['2500',50]], hab: [['2800',300]] },
+    { text: 'Kauf Gebrauchtwagen auf Ziel, netto € 12.000,– + USt 20% € 2.400,–', soll: [['5000',12000],['2500',2400]], hab: [['3300',14400]] },
+    { text: 'Verkauf Auto bar, brutto € 21.600,– (USt 20%)', soll: [['2700',21600]], hab: [['4000',18000],['3500',3600]] },
+    { text: 'Kauf Büromaterial per Bank, netto € 250,– (USt 20%)', soll: [['7600',250],['2500',50]], hab: [['2800',300]] },
     { text: 'Zahlung Gehälter per Bank € 6.500,–', soll: [['6200',6500]], hab: [['2800',6500]] },
-    { text: 'Verkauf Auto auf Ziel, netto € 22.000,–', soll: [['2000',26400]], hab: [['4000',22000],['3500',4400]] },
-    { text: 'Kauf Ersatzteile auf Ziel, netto € 3.000,–', soll: [['5400',3000],['2500',600]], hab: [['3300',3600]] },
+    { text: 'Verkauf Auto auf Ziel, netto € 22.000,– + USt 20% € 4.400,–', soll: [['2000',26400]], hab: [['4000',22000],['3500',4400]] },
+    { text: 'Kauf Ersatzteile auf Ziel, brutto € 3.600,– (USt 20%)', soll: [['5400',3000],['2500',600]], hab: [['3300',3600]] },
     { text: 'Eingang Lieferforderung per Bank € 26.400,–', soll: [['2800',26400]], hab: [['2000',26400]] },
-    { text: 'Reparatur Werkstatt durch Dritte, netto € 800,–', soll: [['7200',800],['2500',160]], hab: [['3300',960]] },
-    { text: 'Kauf PKW (Vorführwagen) auf Ziel, netto € 25.000,–', soll: [['0630',25000],['2500',5000]], hab: [['3300',30000]] },
-    { text: 'Versicherung per Bank € 1.200,–', soll: [['7700',1200]], hab: [['2800',1200]] },
+    { text: 'Reparatur Werkstatt durch Dritte, netto € 800,– + USt 20% € 160,–', soll: [['7200',800],['2500',160]], hab: [['3300',960]] },
+    { text: 'Kauf PKW (Vorführwagen) auf Ziel, brutto € 30.000,– (USt 20%)', soll: [['0630',25000],['2500',5000]], hab: [['3300',30000]] },
+    { text: 'Versicherung per Bank € 1.200,– (keine USt)', soll: [['7700',1200]], hab: [['2800',1200]] },
     { text: 'Zahlung Lieferverbindlichkeit per Bank € 14.400,–', soll: [['3300',14400]], hab: [['2800',14400]] },
     { text: 'Abschreibung Vorführwagen € 5.000,–', soll: [['7020',5000]], hab: [['0630',5000]] },
   ],
   // IT-Solutions
   [
-    { text: 'Kauf Laptops auf Ziel, netto € 4.000,–', soll: [['0620',4000],['2500',800]], hab: [['3300',4800]] },
-    { text: 'Ausgangsrechnung Beratung auf Ziel, netto € 3.500,–', soll: [['2000',4200]], hab: [['4000',3500],['3500',700]] },
-    { text: 'Zahlung Miete per Bank, netto € 2.000,–', soll: [['7400',2000],['2500',400]], hab: [['2800',2400]] },
-    { text: 'Kauf Software auf Ziel, netto € 1.200,–', soll: [['0120',1200],['2500',240]], hab: [['3300',1440]] },
+    { text: 'Kauf Laptops auf Ziel, brutto € 4.800,– (USt 20%)', soll: [['0620',4000],['2500',800]], hab: [['3300',4800]] },
+    { text: 'Ausgangsrechnung Beratung auf Ziel, netto € 3.500,– + USt 20% € 700,–', soll: [['2000',4200]], hab: [['4000',3500],['3500',700]] },
+    { text: 'Zahlung Miete per Bank, netto € 2.000,– (USt 20%)', soll: [['7400',2000],['2500',400]], hab: [['2800',2400]] },
+    { text: 'Kauf Software auf Ziel, netto € 1.200,– + USt 20% € 240,–', soll: [['0120',1200],['2500',240]], hab: [['3300',1440]] },
     { text: 'Eingang Lieferforderung per Bank € 4.200,–', soll: [['2800',4200]], hab: [['2000',4200]] },
     { text: 'Zahlung Gehälter per Bank € 8.500,–', soll: [['6200',8500]], hab: [['2800',8500]] },
-    { text: 'Telefonrechnung per Bank, netto € 200,–', soll: [['7380',200],['2500',40]], hab: [['2800',240]] },
-    { text: 'Ausgangsrechnung Wartung auf Ziel, netto € 1.800,–', soll: [['2000',2160]], hab: [['4000',1800],['3500',360]] },
-    { text: 'Kauf Büroausstattung auf Ziel, netto € 2.500,–', soll: [['0660',2500],['2500',500]], hab: [['3300',3000]] },
+    { text: 'Telefonrechnung per Bank, brutto € 240,– (USt 20%)', soll: [['7380',200],['2500',40]], hab: [['2800',240]] },
+    { text: 'Ausgangsrechnung Wartung auf Ziel, brutto € 2.160,– (USt 20%)', soll: [['2000',2160]], hab: [['4000',1800],['3500',360]] },
+    { text: 'Kauf Büroausstattung auf Ziel, netto € 2.500,– + USt 20% € 500,–', soll: [['0660',2500],['2500',500]], hab: [['3300',3000]] },
     { text: 'Zahlung Lieferverbindlichkeit per Bank € 1.440,–', soll: [['3300',1440]], hab: [['2800',1440]] },
-    { text: 'Aus- und Fortbildung per Bank, netto € 600,–', soll: [['7770',600],['2500',120]], hab: [['2800',720]] },
+    { text: 'Aus- und Fortbildung per Bank, netto € 600,– (USt 20%)', soll: [['7770',600],['2500',120]], hab: [['2800',720]] },
     { text: 'Abschreibung Software € 400,–', soll: [['7020',400]], hab: [['0120',400]] },
   ],
   // Hotel Alpenblick
   [
-    { text: 'Übernachtungserlöse bar, netto € 5.000,–', soll: [['2700',6000]], hab: [['4000',5000],['3500',1000]] },
-    { text: 'Kauf Lebensmittel auf Ziel, netto € 1.500,–', soll: [['5100',1500],['2500',300]], hab: [['3300',1800]] },
-    { text: 'Zahlung Miete per Bank, netto € 3.500,–', soll: [['7400',3500],['2500',700]], hab: [['2800',4200]] },
-    { text: 'Restauranterlöse auf Ziel, netto € 2.200,–', soll: [['2000',2640]], hab: [['4000',2200],['3500',440]] },
+    { text: 'Übernachtungserlöse bar, brutto € 6.000,– (USt 20%)', soll: [['2700',6000]], hab: [['4000',5000],['3500',1000]] },
+    { text: 'Kauf Lebensmittel auf Ziel, netto € 1.500,– + USt 20% € 300,–', soll: [['5100',1500],['2500',300]], hab: [['3300',1800]] },
+    { text: 'Zahlung Miete per Bank, brutto € 4.200,– (USt 20%)', soll: [['7400',3500],['2500',700]], hab: [['2800',4200]] },
+    { text: 'Restauranterlöse auf Ziel, netto € 2.200,– (USt 20%)', soll: [['2000',2640]], hab: [['4000',2200],['3500',440]] },
     { text: 'Zahlung Löhne per Bank € 7.200,–', soll: [['6000',7200]], hab: [['2800',7200]] },
-    { text: 'Kauf Reinigungsmittel per Bank, netto € 300,–', soll: [['1300',300],['2500',60]], hab: [['2800',360]] },
-    { text: 'Werbung per Bank, netto € 900,–', soll: [['7650',900],['2500',180]], hab: [['2800',1080]] },
+    { text: 'Kauf Reinigungsmittel per Bank, netto € 300,– + USt 20% € 60,–', soll: [['1300',300],['2500',60]], hab: [['2800',360]] },
+    { text: 'Werbung per Bank, brutto € 1.080,– (USt 20%)', soll: [['7650',900],['2500',180]], hab: [['2800',1080]] },
     { text: 'Eingang Lieferforderung per Bank € 2.640,–', soll: [['2800',2640]], hab: [['2000',2640]] },
-    { text: 'Kauf Küchengerät auf Ziel, netto € 6.000,–', soll: [['0400',6000],['2500',1200]], hab: [['3300',7200]] },
-    { text: 'Versicherung per Bank € 1.800,–', soll: [['7700',1800]], hab: [['2800',1800]] },
+    { text: 'Kauf Küchengerät auf Ziel, netto € 6.000,– + USt 20% € 1.200,–', soll: [['0400',6000],['2500',1200]], hab: [['3300',7200]] },
+    { text: 'Versicherung per Bank € 1.800,– (keine USt)', soll: [['7700',1800]], hab: [['2800',1800]] },
     { text: 'Zahlung Lieferverbindlichkeit per Bank € 1.800,–', soll: [['3300',1800]], hab: [['2800',1800]] },
     { text: 'Abschreibung Küchengerät € 1.200,–', soll: [['7020',1200]], hab: [['0400',1200]] },
   ],
   // Bau & Holz
   [
-    { text: 'Kauf Baumaterial auf Ziel, netto € 5.000,–', soll: [['1100',5000],['2500',1000]], hab: [['3300',6000]] },
-    { text: 'Ausgangsrechnung Bauleistung auf Ziel, netto € 12.000,–', soll: [['2000',14400]], hab: [['4000',12000],['3500',2400]] },
-    { text: 'Kauf Werkzeug per Bank, netto € 800,–', soll: [['5500',800],['2500',160]], hab: [['2800',960]] },
+    { text: 'Kauf Baumaterial auf Ziel, brutto € 6.000,– (USt 20%)', soll: [['1100',5000],['2500',1000]], hab: [['3300',6000]] },
+    { text: 'Ausgangsrechnung Bauleistung auf Ziel, netto € 12.000,– + USt 20% € 2.400,–', soll: [['2000',14400]], hab: [['4000',12000],['3500',2400]] },
+    { text: 'Kauf Werkzeug per Bank, netto € 800,– (USt 20%)', soll: [['5500',800],['2500',160]], hab: [['2800',960]] },
     { text: 'Zahlung Löhne per Bank € 9.500,–', soll: [['6000',9500]], hab: [['2800',9500]] },
-    { text: 'Kauf LKW auf Ziel, netto € 35.000,–', soll: [['0630',35000],['2500',7000]], hab: [['3300',42000]] },
-    { text: 'Treibstoff bar, netto € 400,–', soll: [['5600',400],['2500',80]], hab: [['2700',480]] },
+    { text: 'Kauf LKW auf Ziel, brutto € 42.000,– (USt 20%)', soll: [['0630',35000],['2500',7000]], hab: [['3300',42000]] },
+    { text: 'Treibstoff bar, netto € 400,– + USt 20% € 80,–', soll: [['5600',400],['2500',80]], hab: [['2700',480]] },
     { text: 'Eingang Lieferforderung per Bank € 14.400,–', soll: [['2800',14400]], hab: [['2000',14400]] },
-    { text: 'Reparatur Maschine durch Dritte, netto € 1.200,–', soll: [['7200',1200],['2500',240]], hab: [['3300',1440]] },
-    { text: 'Kfz-Aufwand per Bank, netto € 350,–', soll: [['7320',350],['2500',70]], hab: [['2800',420]] },
+    { text: 'Reparatur Maschine durch Dritte, brutto € 1.440,– (USt 20%)', soll: [['7200',1200],['2500',240]], hab: [['3300',1440]] },
+    { text: 'Kfz-Aufwand per Bank, netto € 350,– + USt 20% € 70,–', soll: [['7320',350],['2500',70]], hab: [['2800',420]] },
     { text: 'Zahlung Lieferverbindlichkeit per Bank € 6.000,–', soll: [['3300',6000]], hab: [['2800',6000]] },
-    { text: 'Reiseaufwand per Bank, netto € 500,–', soll: [['7340',500],['2500',100]], hab: [['2800',600]] },
+    { text: 'Reiseaufwand per Bank, netto € 500,– (USt 20%)', soll: [['7340',500],['2500',100]], hab: [['2800',600]] },
     { text: 'Abschreibung LKW € 7.000,–', soll: [['7020',7000]], hab: [['0630',7000]] },
   ]
 ];
 
 const kontenplanText = `
-<strong>Klasse 0 – Anlagevermögen</strong><br>
-0110 Konzessionen/Patente · 0120 EDV-Software · 0200 Grundstücke · 0300 Gebäude · 0400 Maschinen · 0620 Büromaschinen/EDV · 0630 Fuhrpark · 0660 Büroausstattung<br><br>
-<strong>Klasse 1 – Vorräte</strong><br>
-1100 Material · 1300 Hilfs-/Betriebsstoffe · 1500 Fertige Erzeugnisse · 1600 Handelsware<br><br>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 32px;">
+<div><strong>Klasse 0 – Anlagevermögen</strong><br>
+0110 Konzessionen / Patente<br>
+0120 EDV-Software<br>
+0200 Grundstücke<br>
+0300 Gebäude<br>
+0400 Maschinen / Anlagen<br>
+0620 Büromaschinen / EDV<br>
+0630 Fuhrpark<br>
+0660 Büro- / Geschäftsausstattung<br><br></div>
+<div><strong>Klasse 1 – Vorräte</strong><br>
+1100 Material<br>
+1300 Hilfs- / Betriebsstoffe<br>
+1500 Fertige Erzeugnisse<br>
+1600 Handelsware<br><br>
 <strong>Klasse 2 – Umlaufvermögen</strong><br>
-2000 Lieferforderungen · 2300 Sonstige Forderungen · 2500 Vorsteuer · 2700 Kassa · 2800 Bankkonto<br><br>
-<strong>Klasse 3 – Verbindlichkeiten</strong><br>
-3000 Rückstellungen · 3100 Bankkredite · 3300 Lieferverbindlichkeiten · 3500 Umsatzsteuer · 3520 USt-Zahllast · 3800 Sonstige Verbindlichkeiten<br><br>
+2000 Lieferforderungen<br>
+2300 Sonstige Forderungen<br>
+2500 Vorsteuer<br>
+2700 Kassa<br>
+2800 Bankkonto<br><br></div>
+<div><strong>Klasse 3 – Verbindlichkeiten</strong><br>
+3300 Lieferverbindlichkeiten<br>
+3500 Umsatzsteuer<br>
+3520 USt-Zahllast<br>
+3800 Sonstige Verbindlichkeiten<br><br>
 <strong>Klasse 4 – Erträge</strong><br>
-4000 Umsatzerlöse · 4800 Sonstige Erträge<br><br>
-<strong>Klasse 5 – Materialaufwand</strong><br>
-5000 Handelswareneinsatz · 5100 Materialverbrauch · 5300 Hilfsstoffe · 5400 Ersatzteile · 5500 Werkzeuge · 5600 Brenn-/Treibstoffe · 5630 Strom<br><br>
-<strong>Klasse 6 – Personalaufwand</strong><br>
-6000 Löhne · 6100 Lehrlingseinkommen · 6200 Gehälter · 6650 Gehaltsabh. Abgaben<br><br>
-<strong>Klasse 7 – Sonstige Aufwendungen</strong><br>
-7020 Abschreibungen · 7030 GWG · 7200 Instandhaltung · 7300 Transporte · 7320 Kfz-Aufwand · 7340 Reiseaufwand · 7380 Telefon/Internet · 7400 Miete · 7600 Büromaterial · 7650 Werbung · 7700 Versicherungen · 7770 Aus-/Fortbildung<br><br>
+4000 Umsatzerlöse<br>
+4800 Sonstige Erträge<br><br></div>
+<div><strong>Klasse 5 – Materialaufwand</strong><br>
+5000 Handelswareneinsatz<br>
+5100 Materialverbrauch<br>
+5300 Hilfsstoffe<br>
+5400 Ersatzteile<br>
+5500 Werkzeuge<br>
+5600 Brenn- / Treibstoffe<br>
+5630 Strom<br><br></div>
+<div><strong>Klasse 6 – Personalaufwand</strong><br>
+6000 Löhne<br>
+6100 Lehrlingseinkommen<br>
+6200 Gehälter<br>
+6650 Gehaltsabh. Abgaben<br><br>
 <strong>Klasse 8 – Finanz</strong><br>
-8100 Zinserträge · 8300 Zinsaufwand`;
+8100 Zinserträge<br>
+8300 Zinsaufwand<br><br></div>
+<div><strong>Klasse 7 – Sonstige Aufwendungen</strong><br>
+7020 Abschreibungen<br>
+7030 GWG<br>
+7200 Instandhaltung<br>
+7300 Transporte<br>
+7320 Kfz-Aufwand<br>
+7340 Reiseaufwand<br>
+7380 Telefon / Internet<br>
+7400 Miete<br>
+7600 Büromaterial<br>
+7650 Werbung<br>
+7700 Versicherungen<br>
+7770 Aus- / Fortbildung<br><br></div>
+</div>`;
 
 let aktFirma = null;
 
@@ -701,23 +890,26 @@ function baueBuchungssaetze(firmIdx) {
   const container = document.getElementById('buchungssatz-container');
   container.innerHTML = '';
   buchungsdaten[firmIdx].forEach((bs, i) => {
-    const mehrSoll = bs.soll.length > 1;
-    const mehrHab = bs.hab.length > 1;
+    const istZweizeilig = bs.soll.length > 1 || bs.hab.length > 1;
+
+    // Bei zweizeiligen Buchungen: immer 2 Zeilen auf JEDER Seite (Schüler entscheidet wo Steuer)
+    const sollZeilen = istZweizeilig ? 2 : 1;
+    const habZeilen  = istZweizeilig ? 2 : 1;
 
     let sollHtml = '';
-    bs.soll.forEach((_, j) => {
+    for (let j = 0; j < sollZeilen; j++) {
       sollHtml += `<div class="bs-line">
         <input class="buchung-field" id="soll-kto-${i}-${j}" placeholder="Konto" maxlength="4">
         <input class="buchung-field" id="soll-bet-${i}-${j}" placeholder="€" type="number" step="0.01">
       </div>`;
-    });
+    }
     let habHtml = '';
-    bs.hab.forEach((_, j) => {
+    for (let j = 0; j < habZeilen; j++) {
       habHtml += `<div class="bs-line">
         <input class="buchung-field" id="hab-kto-${i}-${j}" placeholder="Konto" maxlength="4">
         <input class="buchung-field" id="hab-bet-${i}-${j}" placeholder="€" type="number" step="0.01">
       </div>`;
-    });
+    }
 
     const div = document.createElement('div');
     div.className = 'buchungssatz-item';
@@ -763,41 +955,76 @@ function pruefeAlleBuchungen() {
     let ok = true;
     let fehlerTexte = [];
     let warnTexte = [];
+    const istZweizeilig = bs.soll.length > 1 || bs.hab.length > 1;
 
-    bs.soll.forEach((s, j) => {
-      const ktoEl = document.getElementById(`soll-kto-${i}-${j}`);
-      const betEl = document.getElementById(`soll-bet-${i}-${j}`);
-      const kto = ktoEl?.value.trim();
-      const bet = parseFloat(betEl?.value);
-
-      // Ist das eingegebene Konto eine akzeptable Klasse-1-Alternative?
-      const altInfo = KLASSE1_OK[s[0]];
-      const istAlt = altInfo && altInfo.alt.includes(kto);
-
-      if (kto === s[0]) {
-        ktoEl.classList.add('correct');
-      } else if (istAlt) {
-        ktoEl.classList.add('correct');
-        if (!warnTexte.includes(altInfo.hinweis)) warnTexte.push(altInfo.hinweis);
-      } else {
-        ok = false;
-        fehlerTexte.push(`Soll-Konto ${j+1}: erwartet ${s[0]}`);
+    if (istZweizeilig) {
+      // Sammle alle eingegebenen Soll- und Haben-Einträge
+      const eingabeSoll = [];
+      const eingabeHab  = [];
+      for (let j = 0; j < 2; j++) {
+        const kto = document.getElementById(`soll-kto-${i}-${j}`)?.value.trim();
+        const bet = parseFloat(document.getElementById(`soll-bet-${i}-${j}`)?.value);
+        if (kto) eingabeSoll.push({kto, bet, j, seite:'soll'});
       }
+      for (let j = 0; j < 2; j++) {
+        const kto = document.getElementById(`hab-kto-${i}-${j}`)?.value.trim();
+        const bet = parseFloat(document.getElementById(`hab-bet-${i}-${j}`)?.value);
+        if (kto) eingabeHab.push({kto, bet, j, seite:'hab'});
+      }
+      // Alle erwarteten Einträge (soll + hab zusammen)
+      const erwartetAlle = [...bs.soll.map(s=>({kto:s[0],bet:s[1],seite:'soll'})), ...bs.hab.map(h=>({kto:h[0],bet:h[1],seite:'hab'}))];
+      const eingabeAlle  = [...eingabeSoll, ...eingabeHab];
 
-      if (Math.abs(bet - s[1]) > 0.02) { ok = false; fehlerTexte.push(`Soll-Betrag ${j+1}: erwartet € ${fmt(s[1])}`); }
-      else betEl.classList.add('correct');
-    });
-
-    bs.hab.forEach((h, j) => {
-      const ktoEl = document.getElementById(`hab-kto-${i}-${j}`);
-      const betEl = document.getElementById(`hab-bet-${i}-${j}`);
-      const kto = ktoEl?.value.trim();
-      const bet = parseFloat(betEl?.value);
-      if (kto !== h[0]) { ok = false; fehlerTexte.push(`Haben-Konto ${j+1}: erwartet ${h[0]}`); }
-      else ktoEl.classList.add('correct');
-      if (Math.abs(bet - h[1]) > 0.02) { ok = false; fehlerTexte.push(`Haben-Betrag ${j+1}: erwartet € ${fmt(h[1])}`); }
-      else betEl.classList.add('correct');
-    });
+      // Für jede erwartete Kontonummer: wurde sie irgendwo eingetragen? (Seite egal)
+      erwartetAlle.forEach(erw => {
+        const gefunden = eingabeAlle.find(e => {
+          const altInfo = KLASSE1_OK[erw.kto];
+          const ktoOk = e.kto === erw.kto || (altInfo && altInfo.alt.includes(e.kto));
+          const betOk = Math.abs(e.bet - erw.bet) <= 0.02;
+          return ktoOk && betOk;
+        });
+        if (gefunden) {
+          // Felder grün markieren
+          const ktoEl = document.getElementById(`${gefunden.seite}-kto-${i}-${gefunden.j}`);
+          const betEl = document.getElementById(`${gefunden.seite}-bet-${i}-${gefunden.j}`);
+          if (ktoEl) ktoEl.classList.add('correct');
+          if (betEl) betEl.classList.add('correct');
+          // Klasse-1 Warnung?
+          const altInfo = KLASSE1_OK[erw.kto];
+          if (altInfo && altInfo.alt.includes(gefunden.kto) && !warnTexte.includes(altInfo.hinweis)) {
+            warnTexte.push(altInfo.hinweis);
+          }
+        } else {
+          ok = false;
+          fehlerTexte.push(`Fehlendes Konto: ${erw.kto} | € ${fmt(erw.bet)}`);
+        }
+      });
+    } else {
+      // Einzeilige Buchung: wie bisher
+      bs.soll.forEach((s, j) => {
+        const ktoEl = document.getElementById(`soll-kto-${i}-${j}`);
+        const betEl = document.getElementById(`soll-bet-${i}-${j}`);
+        const kto = ktoEl?.value.trim();
+        const bet = parseFloat(betEl?.value);
+        const altInfo = KLASSE1_OK[s[0]];
+        const istAlt = altInfo && altInfo.alt.includes(kto);
+        if (kto === s[0]) { ktoEl.classList.add('correct'); }
+        else if (istAlt) { ktoEl.classList.add('correct'); if (!warnTexte.includes(altInfo.hinweis)) warnTexte.push(altInfo.hinweis); }
+        else { ok = false; fehlerTexte.push(`Soll-Konto: erwartet ${s[0]}`); }
+        if (Math.abs(bet - s[1]) > 0.02) { ok = false; fehlerTexte.push(`Soll-Betrag: erwartet € ${fmt(s[1])}`); }
+        else betEl.classList.add('correct');
+      });
+      bs.hab.forEach((h, j) => {
+        const ktoEl = document.getElementById(`hab-kto-${i}-${j}`);
+        const betEl = document.getElementById(`hab-bet-${i}-${j}`);
+        const kto = ktoEl?.value.trim();
+        const bet = parseFloat(betEl?.value);
+        if (kto !== h[0]) { ok = false; fehlerTexte.push(`Haben-Konto: erwartet ${h[0]}`); }
+        else ktoEl.classList.add('correct');
+        if (Math.abs(bet - h[1]) > 0.02) { ok = false; fehlerTexte.push(`Haben-Betrag: erwartet € ${fmt(h[1])}`); }
+        else betEl.classList.add('correct');
+      });
+    }
 
     const fb = document.getElementById(`bs-fb-${i}`);
     if (!ok) {
@@ -823,6 +1050,7 @@ function pruefeAlleBuchungen() {
     mainFb.className = 'feedback-box show partial';
     mainFb.innerHTML = `${richtig} von ${data.length} Buchungssätzen richtig. Schau dir die roten Felder an!`;
   }
+  document.getElementById('bs-export-btn').style.display = 'inline-block';
 }
 
 function updateProgress(richtig, gesamt) {
@@ -837,6 +1065,7 @@ function resetBuchungen() {
   const fb = document.getElementById('buchung-feedback');
   fb.className = 'feedback-box'; fb.textContent = '';
   updateProgress(0, buchungsdaten[aktFirma].length);
+  document.getElementById('bs-export-btn').style.display = 'none';
 }
 
 // INIT
