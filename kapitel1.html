@@ -189,19 +189,19 @@
         <div class="input-grid">
           <div class="input-group">
             <label class="input-label">Bruttobetrag (€)</label>
-            <input class="input-field" id="afa-brutto" type="number" step="0.01" placeholder="z.B. 12000.00" oninput="berechneAW()">
+            <input class="input-field" id="afa-brutto" type="number" step="0.01" placeholder="z.B. 12000.00" >
           </div>
           <div class="input-group">
             <label class="input-label">USt-Satz (%)</label>
-            <input class="input-field" id="afa-ust" type="number" value="20" oninput="berechneAW()">
+            <input class="input-field" id="afa-ust" type="number" value="20" >
           </div>
           <div class="input-group" id="skonto-group" style="display:none;">
             <label class="input-label">Skonto (%)</label>
-            <input class="input-field" id="afa-skonto" type="number" step="0.01" placeholder="z.B. 2" oninput="berechneAW()">
+            <input class="input-field" id="afa-skonto" type="number" step="0.01" placeholder="z.B. 2" >
           </div>
           <div class="input-group" id="lieferkosten-group" style="display:none;">
             <label class="input-label">Lieferkosten netto (€)</label>
-            <input class="input-field" id="afa-lieferkosten" type="number" step="0.01" placeholder="z.B. 150" oninput="berechneAW()">
+            <input class="input-field" id="afa-lieferkosten" type="number" step="0.01" placeholder="z.B. 150" >
           </div>
         </div>
         <div class="aw-result" id="aw-result" style="display:none;"></div>
@@ -375,25 +375,7 @@ function ladeAfaAufgabe() {
 }
 
 function berechneAW() {
-  if (!aktAufgabe) return;
-  const brutto = parseFloat(document.getElementById('afa-brutto').value) || 0;
-  const ust = parseFloat(document.getElementById('afa-ust').value) || 20;
-  const skonto = parseFloat(document.getElementById('afa-skonto')?.value) || 0;
-  const lk = parseFloat(document.getElementById('afa-lieferkosten')?.value) || 0;
-  if (!brutto) { document.getElementById('aw-result').style.display = 'none'; return; }
-  const netto = round2(brutto / (1 + ust / 100));
-  const nachSkonto = round2(netto * (1 - skonto / 100));
-  const aw = round2(nachSkonto + lk);
-  berechneterAW = aw;
-  let html = `<strong>Berechneter Anschaffungswert: € ${fmt(aw)}</strong>`;
-  html += `<br><small style="color:var(--mid)">Brutto € ${fmt(brutto)} ÷ 1,${ust} = Netto € ${fmt(netto)}`;
-  if (skonto > 0) html += ` − Skonto ${skonto}% = € ${fmt(nachSkonto)}`;
-  if (lk > 0) html += ` + Lieferkosten € ${fmt(lk)}`;
-  html += `</small>`;
-  const el = document.getElementById('aw-result');
-  el.innerHTML = html;
-  el.style.display = 'block';
-  baueAfaTabelle();
+  // Keine automatische Anzeige – Schüler rechnet selbst
 }
 
 function baueAfaTabelle() {
