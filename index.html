@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UFW-Uwe</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #D63384; --pink-light: #FCE4F1;
+    --orange: #E8620A; --orange-light: #FDF0E8;
+    --blue: #1565C0; --blue-light: #E3F0FB;
+    --dark: #1a1a2e; --mid: #6b7280; --light: #f8f9fc; --border: #e5e7eb; --white: #fff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Outfit', sans-serif; background: var(--light); color: var(--dark); min-height: 100vh; }
+
+  #pw-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#1a1a2e,#2d2d5e); }
+  .pw-box { background:white; border-radius:20px; box-shadow:0 8px 40px rgba(0,0,0,.25); padding:52px 44px; max-width:400px; width:90%; text-align:center; }
+  .pw-logo { font-size:3rem; margin-bottom:10px; }
+  .pw-title { font-size:1.8rem; font-weight:800; color:var(--dark); margin-bottom:6px; }
+  .pw-title span { color:var(--orange); }
+  .pw-sub { font-size:.9rem; color:var(--mid); margin-bottom:28px; line-height:1.5; }
+  .pw-input { width:100%; padding:13px 16px; border:2px solid var(--border); border-radius:10px; font-size:1rem; font-family:'Outfit',sans-serif; outline:none; margin-bottom:12px; transition:border-color .2s; }
+  .pw-input:focus { border-color:var(--orange); }
+  .pw-btn { width:100%; background:var(--orange); color:white; border:none; border-radius:10px; padding:14px; font-size:1rem; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; transition:background .2s; }
+  .pw-btn:hover { background:#c9540a; }
+  .pw-error { display:none; color:#e74c3c; font-size:.85rem; margin-bottom:10px; }
+  .pw-footer { margin-top:28px; font-size:.78rem; color:#aaa; line-height:1.6; }
+
+  #main { display:none; }
+  header { background:var(--dark); color:white; padding:18px 32px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,0,0,.15); }
+  .logo { font-size:1.5rem; font-weight:800; }
+  .logo span { color:var(--orange); }
+  .logo-sub { font-size:.8rem; font-weight:400; color:#aaa; margin-left:12px; }
+  .header-copy { font-size:.82rem; color:#9ca3af; }
+
+  .hero { background:linear-gradient(135deg,#1a1a2e,#2d2d5e); color:white; text-align:center; padding:60px 20px 80px; }
+  .hero h1 { font-size:2.6rem; font-weight:800; margin-bottom:12px; }
+  .hero h1 span { color:var(--orange); }
+  .hero p { font-size:1.05rem; color:#cbd5e1; max-width:540px; margin:0 auto; }
+
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:28px; max-width:1000px; margin:-40px auto 60px; padding:0 24px; }
+  .card { background:white; border-radius:18px; box-shadow:0 4px 24px rgba(0,0,0,.08); overflow:hidden; text-decoration:none; color:inherit; transition:transform .2s,box-shadow .2s; display:block; }
+  .card:hover:not(.disabled) { transform:translateY(-4px); box-shadow:0 8px 32px rgba(0,0,0,.13); }
+  .card.disabled { opacity:.6; cursor:default; }
+  .card-header { padding:32px 28px 24px; color:white; }
+  .card-icon { font-size:2.4rem; margin-bottom:12px; }
+  .card-num { font-size:.8rem; font-weight:700; opacity:.8; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+  .card-title { font-size:1.2rem; font-weight:800; }
+  .card-body { padding:20px 28px 28px; }
+  .card-desc { font-size:.9rem; color:var(--mid); margin-bottom:14px; line-height:1.5; }
+  .card-topics { list-style:none; }
+  .card-topics li { font-size:.85rem; color:#555; padding:4px 0; display:flex; align-items:center; gap:8px; }
+  .card-topics li::before { content:"→"; font-weight:700; }
+  .card-badge { display:inline-block; padding:5px 14px; border-radius:20px; font-size:.75rem; font-weight:700; margin-top:14px; }
+  .pink-bg { background:linear-gradient(135deg,#D63384,#a0195f); }
+  .pink-badge { background:var(--pink-light); color:var(--pink); }
+  .orange-bg { background:linear-gradient(135deg,#E8620A,#b84d08); }
+  .orange-badge { background:var(--orange-light); color:var(--orange); }
+  .blue-bg { background:linear-gradient(135deg,#1565C0,#0d47a1); }
+  .blue-badge { background:var(--blue-light); color:var(--blue); }
+
+  footer { text-align:center; padding:24px; font-size:.78rem; color:#aaa; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div id="pw-screen">
+  <div class="pw-box">
+    <div class="pw-logo">📚</div>
+    <div class="pw-title">UFW-<span>Uwe</span></div>
+    <div class="pw-sub">Unternehmensführung · HTL II/III<br>Bitte gib das Passwort ein.</div>
+    <input type="password" id="pw-input" class="pw-input" placeholder="Passwort" onkeydown="if(event.key==='Enter')checkPw()">
+    <div id="pw-error" class="pw-error">❌ Falsches Passwort – versuch's nochmal!</div>
+    <button class="pw-btn" onclick="checkPw()">Einloggen</button>
+    <div class="pw-footer">Dieses Tool dient ausschließlich Unterrichtszwecken.<br>© GALS</div>
+  </div>
+</div>
+
+<div id="main">
+  <header>
+    <div class="logo">UFW-<span>Uwe</span><span class="logo-sub">© GALS</span></div>
+    <div class="header-copy">HTL II/III · Unternehmensführung</div>
+  </header>
+  <div class="hero">
+    <h1>Willkommen bei <span>UFW-Uwe</span>!</h1>
+    <p>Dein interaktives Lernportal für Unternehmensführung. Wähle ein Kapitel und leg los!</p>
+  </div>
+  <div class="cards">
+    <a href="kapitel1.html" class="card">
+      <div class="card-header pink-bg">
+        <div class="card-icon">📊</div>
+        <div class="card-num">Kapitel 1</div>
+        <div class="card-title">Buchhaltung &amp; Bilanzierung</div>
+      </div>
+      <div class="card-body">
+        <div class="card-desc">Abschreibungen berechnen und Buchungssätze mit 5 Musterunternehmen üben.</div>
+        <ul class="card-topics">
+          <li>Lineare Abschreibung mit Tabelle</li>
+          <li>Doppelte Buchhaltung mit USt/VSt</li>
+          <li>5 Musterunternehmen zur Auswahl</li>
+        </ul>
+        <span class="card-badge pink-badge">✓ Verfügbar</span>
+      </div>
+    </a>
+    <a href="kapitel2.html" class="card">
+      <div class="card-header orange-bg">
+        <div class="card-icon">👥</div>
+        <div class="card-num">Kapitel 2</div>
+        <div class="card-title">Personal &amp; Entgelt</div>
+      </div>
+      <div class="card-body">
+        <div class="card-desc">Beschäftigungsformen, Brutto-Netto-Rechner, Personalkosten und Lohnformen.</div>
+        <ul class="card-topics">
+          <li>Beschäftigungsformen &amp; Rechtsgrundlagen</li>
+          <li>Interaktiver Brutto-Netto-Rechner</li>
+          <li>Lohnformen &amp; Personalkosten</li>
+        </ul>
+        <span class="card-badge orange-badge">✓ Verfügbar</span>
+      </div>
+    </a>
+    <div class="card disabled">
+      <div class="card-header blue-bg">
+        <div class="card-icon">📣</div>
+        <div class="card-num">Kapitel 3</div>
+        <div class="card-title">Marketing &amp; Vertrieb</div>
+      </div>
+      <div class="card-body">
+        <div class="card-desc">Marketingstrategien, Preisgestaltung und Vertriebskanäle.</div>
+        <ul class="card-topics">
+          <li style="color:#aaa">Marketingmix (4P)</li>
+          <li style="color:#aaa">Preiskalkulation</li>
+          <li style="color:#aaa">Vertriebskanäle</li>
+        </ul>
+        <span class="card-badge blue-badge">🔜 Coming Soon</span>
+      </div>
+    </div>
+  </div>
+  <footer>Dieses Tool dient ausschließlich Unterrichtszwecken. © GALS</footer>
+</div>
+
+<script>
+function checkPw() {
+  const val = document.getElementById('pw-input').value.trim().toLowerCase();
+  if (val === 'paulistcool') {
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    sessionStorage.setItem('ufw-auth','1');
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+if (sessionStorage.getItem('ufw-auth') === '1') {
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+}
+</script>
+</body>
+</html>

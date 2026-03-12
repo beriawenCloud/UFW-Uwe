@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UFW-Uwe – Kapitel 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Outfit',sans-serif; background:#f8f9fc; min-height:100vh; }
+  #auth-block { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#1a1a2e,#2d2d5e); }
+  .auth-box { background:white; border-radius:18px; padding:40px; text-align:center; max-width:360px; width:90%; }
+  .auth-box p { color:#6b7280; margin-bottom:16px; }
+  .auth-btn { background:#1565C0; color:white; border:none; border-radius:10px; padding:12px 24px; font-size:1rem; font-family:'Outfit',sans-serif; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+  #page { display:none; }
+  header { background:#1a1a2e; color:white; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; }
+  .logo { font-size:1.3rem; font-weight:800; }
+  .logo span { color:#1565C0; }
+  .logo-sub { font-size:.75rem; font-weight:400; color:#aaa; margin-left:10px; }
+  .back-btn { background:rgba(255,255,255,.1); color:white; text-decoration:none; padding:8px 16px; border-radius:8px; font-size:.85rem; font-weight:600; }
+  .main { display:flex; align-items:center; justify-content:center; min-height:calc(100vh - 120px); text-align:center; padding:40px 20px; }
+  .coming-box { background:white; border-radius:20px; box-shadow:0 4px 24px rgba(0,0,0,.08); padding:60px 48px; max-width:480px; }
+  .coming-icon { font-size:4rem; margin-bottom:20px; }
+  .coming-title { font-size:1.8rem; font-weight:800; color:#1565C0; margin-bottom:12px; }
+  .coming-sub { font-size:1rem; color:#6b7280; line-height:1.6; margin-bottom:28px; }
+  .coming-topics { list-style:none; text-align:left; margin-bottom:32px; }
+  .coming-topics li { padding:8px 0; border-bottom:1px solid #f3f4f6; font-size:.9rem; color:#555; display:flex; align-items:center; gap:10px; }
+  .coming-topics li::before { content:"🔜"; }
+  .back-link { background:#1565C0; color:white; text-decoration:none; padding:13px 28px; border-radius:10px; font-weight:700; font-size:1rem; display:inline-block; }
+  footer { text-align:center; padding:20px; font-size:.78rem; color:#aaa; border-top:1px solid #e5e7eb; }
+</style>
+</head>
+<body>
+
+<div id="auth-block">
+  <div class="auth-box">
+    <p>Bitte zuerst auf der Startseite einloggen.</p>
+    <a href="index.html" class="auth-btn">Zur Startseite</a>
+  </div>
+</div>
+
+<div id="page">
+  <header>
+    <div class="logo">UFW-<span>Uwe</span><span class="logo-sub">© GALS</span></div>
+    <a href="index.html" class="back-btn">← Zurück</a>
+  </header>
+  <div class="main">
+    <div class="coming-box">
+      <div class="coming-icon">📣</div>
+      <div class="coming-title">Kapitel 3 – Marketing &amp; Vertrieb</div>
+      <div class="coming-sub">Dieses Kapitel ist noch in Vorbereitung und wird bald freigeschaltet. Hier kommt dann alles zum Thema Marketing und Vertrieb!</div>
+      <ul class="coming-topics">
+        <li>Marketingmix (4P – Product, Price, Place, Promotion)</li>
+        <li>Preiskalkulation &amp; Preisstrategien</li>
+        <li>Vertriebskanäle &amp; Distribution</li>
+        <li>Marktforschung &amp; Zielgruppen</li>
+        <li>Werbung &amp; Kommunikation</li>
+      </ul>
+      <a href="index.html" class="back-link">← Zurück zur Übersicht</a>
+    </div>
+  </div>
+  <footer>Dieses Tool dient ausschließlich Unterrichtszwecken. © GALS</footer>
+</div>
+
+<script>
+if (sessionStorage.getItem('ufw-auth') === '1') {
+  document.getElementById('auth-block').style.display = 'none';
+  document.getElementById('page').style.display = 'block';
+}
+</script>
+</body>
+</html>
