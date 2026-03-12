@@ -120,8 +120,7 @@
   .bs-slash { display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:700; color:var(--pink); padding-top:20px; }
   .bs-feedback { font-size:.82rem; margin-top:8px; padding:8px 12px; border-radius:8px; display:none; }
   .bs-feedback.show { display:block; }
-  .bs-feedback.ok { background:var(--green-light); color:var(--green); }
-  .bs-feedback.err { background:var(--red-light); color:var(--red); }
+  .bs-feedback.warn { background:#FFF8E1; color:#F57F17; border-left: 3px solid #F9A825; }
 
   .kontenplan-toggle { background:none; border:1px solid var(--pink); color:var(--pink); border-radius:8px; padding:6px 14px; font-size:.82rem; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; margin-bottom:12px; }
   .kontenplan-box { display:none; background:#fafafa; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; font-size:.82rem; line-height:1.8; column-count:2; }
@@ -747,6 +746,15 @@ function toggleKontenplan() {
   box.style.display = box.style.display === 'block' ? 'none' : 'block';
 }
 
+// Mapping: Korrekte Klasse-5-Konten → akzeptable Klasse-1-Alternativen + Hinweistext
+const KLASSE1_OK = {
+  '5000': { alt: ['1600'], hinweis: 'Nicht falsch – Handelswaren können auf 1600 (Handelsware) erfasst werden. Üblicher ist aber die direkte Buchung auf 5000 als Aufwand.' },
+  '5100': { alt: ['1100','1300'], hinweis: 'Nicht falsch – Materialeinkäufe können auf Klasse 1 (Vorräte) gebucht werden. Üblicher ist aber die direkte Buchung auf 5100 als Aufwand.' },
+  '5400': { alt: ['1300'], hinweis: 'Nicht falsch – Ersatzteile können auf Klasse 1 erfasst werden. Üblicher ist aber die direkte Buchung auf 5400 als Aufwand.' },
+  '5600': { alt: ['1300'], hinweis: 'Nicht falsch – Treibstoffe können auf Klasse 1 erfasst werden. Üblicher ist aber die direkte Buchung auf 5600 als Aufwand.' },
+  '5630': { alt: ['1300'], hinweis: 'Nicht falsch – Betriebsstoffe können auf Klasse 1 erfasst werden. Üblicher ist aber die direkte Buchung auf 5630 als Aufwand.' },
+};
+
 function pruefeAlleBuchungen() {
   if (aktFirma === null) return;
   const data = buchungsdaten[aktFirma];
@@ -754,25 +762,56 @@ function pruefeAlleBuchungen() {
   data.forEach((bs, i) => {
     let ok = true;
     let fehlerTexte = [];
+    let warnTexte = [];
+
     bs.soll.forEach((s, j) => {
-      const kto = document.getElementById(`soll-kto-${i}-${j}`)?.value.trim();
-      const bet = parseFloat(document.getElementById(`soll-bet-${i}-${j}`)?.value);
-      if (kto !== s[0]) { ok = false; fehlerTexte.push(`Soll-Konto ${j+1}: erwartet ${s[0]}`); }
-      else document.getElementById(`soll-kto-${i}-${j}`).classList.add('correct');
+      const ktoEl = document.getElementById(`soll-kto-${i}-${j}`);
+      const betEl = document.getElementById(`soll-bet-${i}-${j}`);
+      const kto = ktoEl?.value.trim();
+      const bet = parseFloat(betEl?.value);
+
+      // Ist das eingegebene Konto eine akzeptable Klasse-1-Alternative?
+      const altInfo = KLASSE1_OK[s[0]];
+      const istAlt = altInfo && altInfo.alt.includes(kto);
+
+      if (kto === s[0]) {
+        ktoEl.classList.add('correct');
+      } else if (istAlt) {
+        ktoEl.classList.add('correct');
+        if (!warnTexte.includes(altInfo.hinweis)) warnTexte.push(altInfo.hinweis);
+      } else {
+        ok = false;
+        fehlerTexte.push(`Soll-Konto ${j+1}: erwartet ${s[0]}`);
+      }
+
       if (Math.abs(bet - s[1]) > 0.02) { ok = false; fehlerTexte.push(`Soll-Betrag ${j+1}: erwartet € ${fmt(s[1])}`); }
-      else document.getElementById(`soll-bet-${i}-${j}`).classList.add('correct');
+      else betEl.classList.add('correct');
     });
+
     bs.hab.forEach((h, j) => {
-      const kto = document.getElementById(`hab-kto-${i}-${j}`)?.value.trim();
-      const bet = parseFloat(document.getElementById(`hab-bet-${i}-${j}`)?.value);
+      const ktoEl = document.getElementById(`hab-kto-${i}-${j}`);
+      const betEl = document.getElementById(`hab-bet-${i}-${j}`);
+      const kto = ktoEl?.value.trim();
+      const bet = parseFloat(betEl?.value);
       if (kto !== h[0]) { ok = false; fehlerTexte.push(`Haben-Konto ${j+1}: erwartet ${h[0]}`); }
-      else document.getElementById(`hab-kto-${i}-${j}`).classList.add('correct');
+      else ktoEl.classList.add('correct');
       if (Math.abs(bet - h[1]) > 0.02) { ok = false; fehlerTexte.push(`Haben-Betrag ${j+1}: erwartet € ${fmt(h[1])}`); }
-      else document.getElementById(`hab-bet-${i}-${j}`).classList.add('correct');
+      else betEl.classList.add('correct');
     });
+
     const fb = document.getElementById(`bs-fb-${i}`);
-    if (ok) { richtig++; fb.className = 'bs-feedback show ok'; fb.textContent = '✅ Richtig!'; }
-    else { fb.className = 'bs-feedback show err'; fb.innerHTML = '❌ ' + fehlerTexte.join(' · '); }
+    if (!ok) {
+      fb.className = 'bs-feedback show err';
+      fb.innerHTML = '❌ ' + fehlerTexte.join(' · ');
+    } else if (warnTexte.length > 0) {
+      richtig++;
+      fb.className = 'bs-feedback show warn';
+      fb.innerHTML = '⚠️ ' + warnTexte.join(' ');
+    } else {
+      richtig++;
+      fb.className = 'bs-feedback show ok';
+      fb.textContent = '✅ Richtig!';
+    }
   });
   updateProgress(richtig, data.length);
   const mainFb = document.getElementById('buchung-feedback');
