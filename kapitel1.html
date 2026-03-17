@@ -169,7 +169,7 @@
       <div class="card-title">📝 Übungsbeispiel auswählen</div>
       <select class="aufgabe-select" id="afa-select" onchange="ladeAfaAufgabe()">
         <option value="">– Bitte wählen –</option>
-        <option value="0">1 – Kaffeemaschine (Bäckerei Tirol)</option>
+        <option value="0">1 – Drehmaschine (Bäckerei Tirol)</option>
         <option value="1">2 – Firmen-PKW (Autohaus Innsbruck)</option>
         <option value="2">3 – Server (IT-Solutions GmbH)</option>
         <option value="3">4 – Küchengerät (Hotel Alpenblick)</option>
@@ -399,6 +399,8 @@ function baueAfaTabelle() {
     else if (i === jahre.length - 1 && halbjahr) afaBetrag = round2(afaJaehrlich / 2);
     else afaBetrag = afaJaehrlich;
     const isLast = i === jahre.length - 1;
+    // Im letzten Jahr bei Erinnerungseuro: AfA so anpassen dass BW 31.12. = € 1,–
+    if (isLast && a.verbleib === 'bleibt') afaBetrag = round2(bwStart - 1);
     const bwEnde = isLast ? (a.verbleib === 'bleibt' ? 1 : 0) : round2(bwStart - afaBetrag);
     const sollSatz = (i === 0 && halbjahr) || (i === jahre.length - 1 && halbjahr) ? round2(afaSatz / 2) : afaSatz;
     korrektRows.push({ jahr: jahre[i], bw1: bwStart, afaSatz: sollSatz, afa: afaBetrag, bw31: bwEnde, isLast, halbjahr: (i === 0 && halbjahr) || (i === jahre.length - 1 && halbjahr) });
@@ -940,45 +942,71 @@ function pruefeAlleBuchungen() {
     const istZweizeilig = bs.soll.length > 1 || bs.hab.length > 1;
 
     if (istZweizeilig) {
-      // Sammle alle eingegebenen Soll- und Haben-Einträge
-      const eingabeSoll = [];
-      const eingabeHab  = [];
-      for (let j = 0; j < 2; j++) {
-        const kto = document.getElementById(`soll-kto-${i}-${j}`)?.value.trim();
-        const bet = parseFloat(document.getElementById(`soll-bet-${i}-${j}`)?.value);
-        if (kto) eingabeSoll.push({kto, bet, j, seite:'soll'});
-      }
-      for (let j = 0; j < 2; j++) {
-        const kto = document.getElementById(`hab-kto-${i}-${j}`)?.value.trim();
-        const bet = parseFloat(document.getElementById(`hab-bet-${i}-${j}`)?.value);
-        if (kto) eingabeHab.push({kto, bet, j, seite:'hab'});
-      }
-      // Alle erwarteten Einträge (soll + hab zusammen)
-      const erwartetAlle = [...bs.soll.map(s=>({kto:s[0],bet:s[1],seite:'soll'})), ...bs.hab.map(h=>({kto:h[0],bet:h[1],seite:'hab'}))];
-      const eingabeAlle  = [...eingabeSoll, ...eingabeHab];
+      // Soll-Seite prüfen: alle erwarteten Soll-Konten müssen im SOLL stehen
+      bs.soll.forEach((s, j) => {
+        const ktoEl = document.getElementById(`soll-kto-${i}-${j}`);
+        const betEl = document.getElementById(`soll-bet-${i}-${j}`);
+        // Auch zweite Zeile auf Soll-Seite prüfen (Steuer könnte dort stehen)
+        const ktoEl2 = document.getElementById(`soll-kto-${i}-${j===0?1:0}`);
+        const betEl2 = document.getElementById(`soll-bet-${i}-${j===0?1:0}`);
+        const kto0 = ktoEl?.value.trim();
+        const bet0 = parseFloat(betEl?.value);
+        const kto1 = ktoEl2?.value.trim();
+        const bet1 = parseFloat(betEl2?.value);
 
-      // Für jede erwartete Kontonummer: wurde sie irgendwo eingetragen? (Seite egal)
-      erwartetAlle.forEach(erw => {
-        const gefunden = eingabeAlle.find(e => {
-          const altInfo = KLASSE1_OK[erw.kto];
-          const ktoOk = e.kto === erw.kto || (altInfo && altInfo.alt.includes(e.kto));
-          const betOk = Math.abs(e.bet - erw.bet) <= 0.02;
-          return ktoOk && betOk;
-        });
+        const altInfo = KLASSE1_OK[s[0]];
+        // Suche das Konto auf der Soll-Seite (Zeile 0 oder 1)
+        let gefunden = null;
+        for (const [ktoE, betE, kEl, bEl] of [[kto0,bet0,ktoEl,betEl],[kto1,bet1,ktoEl2,betEl2]]) {
+          const ktoOk = ktoE === s[0] || (altInfo && altInfo.alt.includes(ktoE));
+          const betOk = Math.abs(betE - s[1]) <= 0.02;
+          if (ktoOk && betOk) { gefunden = {kEl, bEl, kto: ktoE}; break; }
+        }
         if (gefunden) {
-          // Felder grün markieren
-          const ktoEl = document.getElementById(`${gefunden.seite}-kto-${i}-${gefunden.j}`);
-          const betEl = document.getElementById(`${gefunden.seite}-bet-${i}-${gefunden.j}`);
-          if (ktoEl) ktoEl.classList.add('correct');
-          if (betEl) betEl.classList.add('correct');
-          // Klasse-1 Warnung?
-          const altInfo = KLASSE1_OK[erw.kto];
-          if (altInfo && altInfo.alt.includes(gefunden.kto) && !warnTexte.includes(altInfo.hinweis)) {
+          gefunden.kEl?.classList.add('correct');
+          gefunden.bEl?.classList.add('correct');
+          if (altInfo && altInfo.alt.includes(gefunden.kto) && !warnTexte.includes(altInfo.hinweis))
             warnTexte.push(altInfo.hinweis);
-          }
         } else {
           ok = false;
-          fehlerTexte.push(`Fehlendes Konto: ${erw.kto} | € ${fmt(erw.bet)}`);
+          // Prüfen ob es auf der falschen Seite (Haben) steht
+          const aufHaben0 = document.getElementById(`hab-kto-${i}-0`)?.value.trim();
+          const aufHaben1 = document.getElementById(`hab-kto-${i}-1`)?.value.trim();
+          if (aufHaben0 === s[0] || aufHaben1 === s[0]) {
+            fehlerTexte.push(`Konto ${s[0]} steht auf der falschen Seite – gehört ins SOLL!`);
+          } else {
+            fehlerTexte.push(`Soll-Konto ${s[0]} | € ${fmt(s[1])} fehlt oder falsch`);
+          }
+        }
+      });
+
+      // Haben-Seite prüfen: alle erwarteten Haben-Konten müssen im HABEN stehen
+      bs.hab.forEach((h, j) => {
+        const ktoEl = document.getElementById(`hab-kto-${i}-${j}`);
+        const betEl = document.getElementById(`hab-bet-${i}-${j}`);
+        const ktoEl2 = document.getElementById(`hab-kto-${i}-${j===0?1:0}`);
+        const betEl2 = document.getElementById(`hab-bet-${i}-${j===0?1:0}`);
+        const kto0 = ktoEl?.value.trim();
+        const bet0 = parseFloat(betEl?.value);
+        const kto1 = ktoEl2?.value.trim();
+        const bet1 = parseFloat(betEl2?.value);
+
+        let gefunden = null;
+        for (const [ktoE, betE, kEl, bEl] of [[kto0,bet0,ktoEl,betEl],[kto1,bet1,ktoEl2,betEl2]]) {
+          if (ktoE === h[0] && Math.abs(betE - h[1]) <= 0.02) { gefunden = {kEl, bEl}; break; }
+        }
+        if (gefunden) {
+          gefunden.kEl?.classList.add('correct');
+          gefunden.bEl?.classList.add('correct');
+        } else {
+          ok = false;
+          const aufSoll0 = document.getElementById(`soll-kto-${i}-0`)?.value.trim();
+          const aufSoll1 = document.getElementById(`soll-kto-${i}-1`)?.value.trim();
+          if (aufSoll0 === h[0] || aufSoll1 === h[0]) {
+            fehlerTexte.push(`Konto ${h[0]} steht auf der falschen Seite – gehört ins HABEN!`);
+          } else {
+            fehlerTexte.push(`Haben-Konto ${h[0]} | € ${fmt(h[1])} fehlt oder falsch`);
+          }
         }
       });
     } else {
