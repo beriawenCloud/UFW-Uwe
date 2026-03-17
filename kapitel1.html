@@ -185,6 +185,9 @@
         <div class="aufgabe-box">
           <h4 id="afa-titel"></h4>
           <p id="afa-text"></p>
+          <p id="pkw-hinweis" style="display:none;margin-top:10px;padding:8px 12px;background:#fff3cd;border-left:3px solid #f0a500;border-radius:6px;font-size:.88rem;color:#7a4f00;">
+            ⚠️ <strong>Achtung PKW:</strong> Bei Firmen-PKW ist kein Vorsteuerabzug möglich! Der Anschaffungswert entspricht daher dem <strong>Bruttobetrag</strong> (inkl. USt).
+          </p>
         </div>
         <div class="input-grid">
           <div class="input-group">
@@ -308,7 +311,7 @@ const afaAufgaben = [
     text: 'Das Autohaus kauft einen Firmen-PKW. Bruttopreis: € 24.000,–. Kein Skonto, keine Lieferkosten. Anschaffungsdatum: 1. August 2025. Nutzungsdauer: 4 Jahre. Fahrzeug scheidet am Ende aus.',
     brutto: 24000, ust: 20, skonto: 0, lieferkosten: 0,
     kaufmonat: 8, nd: 4, konto: '0630', verbleib: 'scheidet',
-    startjahr: 2025
+    startjahr: 2025, pkw: true
   },
   {
     titel: 'Server – IT-Solutions GmbH',
@@ -341,6 +344,11 @@ function fmt(n) { return n.toLocaleString('de-AT', {minimumFractionDigits:2, max
 function round2(n) { return Math.round(n * 100) / 100; }
 
 function berechneAWKorrekt(a) {
+  if (a.pkw) {
+    // PKW: kein Vorsteuerabzug → AW = Brutto (nach Skonto falls vorhanden)
+    const nachSkonto = round2(a.brutto * (1 - (a.skonto || 0) / 100));
+    return round2(nachSkonto + (a.lieferkosten || 0));
+  }
   const netto = round2(a.brutto / (1 + a.ust / 100));
   const nachSkonto = round2(netto * (1 - (a.skonto || 0) / 100));
   return round2(nachSkonto + (a.lieferkosten || 0));
@@ -353,8 +361,11 @@ function ladeAfaAufgabe() {
   document.getElementById('afa-content').style.display = 'block';
   document.getElementById('afa-titel').textContent = aktAufgabe.titel;
   document.getElementById('afa-text').textContent = aktAufgabe.text;
+  document.getElementById('pkw-hinweis').style.display = aktAufgabe.pkw ? 'block' : 'none';
   document.getElementById('afa-brutto').value = '';
   document.getElementById('afa-ust').value = aktAufgabe.ust;
+  // Bei PKW: USt-Feld ausblenden (kein Abzug)
+  document.getElementById('afa-ust').closest('.input-group').style.display = aktAufgabe.pkw ? 'none' : 'flex';
   document.getElementById('skonto-group').style.display = aktAufgabe.skonto > 0 ? 'flex' : 'none';
   document.getElementById('lieferkosten-group').style.display = aktAufgabe.lieferkosten > 0 ? 'flex' : 'none';
   if (aktAufgabe.skonto > 0) document.getElementById('afa-skonto').value = aktAufgabe.skonto;
