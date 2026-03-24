@@ -211,7 +211,7 @@
         <div style="margin-top:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
           <div class="input-group" style="flex:1;min-width:200px;max-width:280px;">
             <label class="input-label">Dein berechneter Anschaffungswert (€)</label>
-            <input class="input-field" id="aw-eingabe" type="number" step="0.01" placeholder="€ ...">
+            <input class="input-field" id="aw-eingabe" type="text" inputmode="decimal" placeholder="z.B. 3600/1.2*0.98" onkeydown="formelKeydown(event)">
           </div>
           <button class="btn btn-pink" style="margin-top:20px;" onclick="pruefeAW()">✓ AW prüfen</button>
         </div>
@@ -286,6 +286,33 @@
 if (sessionStorage.getItem('ufw-auth') === '1') {
   document.getElementById('auth-block').style.display = 'none';
   document.getElementById('page').style.display = 'block';
+}
+
+// ============================================================
+// FORMEL-RECHNER: Enter wertet Rechenausdruck aus
+// ============================================================
+function werteFormelAus(input) {
+  const raw = input.value.trim();
+  if (!raw) return;
+  // Nur erlaubte Zeichen: Ziffern, . , + - * / ( ) Leerzeichen
+  const sauber = raw.replace(/,/g, '.'); // Komma → Punkt
+  if (!/^[\d\s\+\-\*\/\.\(\)]+$/.test(sauber)) return; // Sicherheitscheck
+  try {
+    const ergebnis = Function('"use strict"; return (' + sauber + ')')();
+    if (isFinite(ergebnis)) {
+      input.value = Math.round(ergebnis * 100) / 100;
+      // Kurz grün aufleuchten als Feedback
+      input.style.background = '#dcfce7';
+      setTimeout(() => { input.style.background = ''; }, 800);
+    }
+  } catch(e) { /* ungültiger Ausdruck – nichts tun */ }
+}
+
+function formelKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    werteFormelAus(e.target);
+  }
 }
 
 function showSection(id) {
@@ -446,21 +473,21 @@ function baueAfaTabelle() {
   // Zeile 1: AW / BW 1.1.
   html += `<tr><td style="font-weight:700;padding:10px 14px;background:#f0f8ff;border:1px solid #d0d0d0;white-space:nowrap;">AW / BW 1.1. (€)</td>`;
   jahre.forEach((_, i) => {
-    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="number" step="0.01" placeholder="€" id="bw1-${i}" class="afa-input" style="width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;"></td>`;
+    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="text" inputmode="decimal" placeholder="€" id="bw1-${i}" class="afa-input" onkeydown="formelKeydown(event)" style="width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;"></td>`;
   });
   html += '</tr>';
 
   // Zeile 2: Abschreibungssatz
   html += `<tr><td style="font-weight:700;padding:10px 14px;background:#f0f8ff;border:1px solid #d0d0d0;white-space:nowrap;">Abschreibungssatz (%)</td>`;
   jahre.forEach((_, i) => {
-    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="number" step="0.01" placeholder="%" id="afasatz-${i}" class="afa-input" style="width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;"></td>`;
+    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="text" inputmode="decimal" placeholder="%" id="afasatz-${i}" class="afa-input" onkeydown="formelKeydown(event)" style="width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;"></td>`;
   });
   html += '</tr>';
 
   // Zeile 3: Abschreibungsbetrag
   html += `<tr><td style="font-weight:700;padding:10px 14px;background:#f0f8ff;border:1px solid #d0d0d0;white-space:nowrap;">Abschreibungsbetrag (€)</td>`;
   jahre.forEach((_, i) => {
-    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="number" step="0.01" placeholder="€" id="afa-${i}" class="afa-input" style="width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;"></td>`;
+    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="text" inputmode="decimal" placeholder="€" id="afa-${i}" class="afa-input" onkeydown="formelKeydown(event)" style="width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;"></td>`;
   });
   html += '</tr>';
 
@@ -472,7 +499,7 @@ function baueAfaTabelle() {
     const bw31Style = isErinnerung
       ? 'width:100%;padding:7px;border:1.5px solid #f0a500;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;background:#fffbe6;'
       : 'width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;';
-    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="number" step="0.01" placeholder="${bw31Placeholder}" id="bw31-${i}" class="afa-input" style="${bw31Style}"></td>`;
+    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="text" inputmode="decimal" placeholder="${bw31Placeholder}" id="bw31-${i}" class="afa-input" onkeydown="formelKeydown(event)" style="${bw31Style}"></td>`;
   });
   html += '</tr>';
 
