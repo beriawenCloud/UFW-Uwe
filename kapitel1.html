@@ -419,19 +419,12 @@ function baueAfaTabelle() {
     else if (i === jahre.length - 1 && halbjahr) afaBetrag = round2(afaJaehrlich / 2);
     else afaBetrag = afaJaehrlich;
     const isLast = i === jahre.length - 1;
-    // Im letzten Jahr bei Erinnerungseuro: AfA so anpassen dass BW 31.12. = € 1,–
+    // Im letzten Jahr bei Erinnerungseuro: AfA-Betrag anpassen damit BW 31.12. = € 1,–
     if (isLast && a.verbleib === 'bleibt') afaBetrag = round2(bwStart - 1);
     const bwEnde = isLast ? (a.verbleib === 'bleibt' ? 1 : 0) : round2(bwStart - afaBetrag);
-    // AfA-Satz: normal immer 100/ND, nur im letzten Jahr bei Erinnerungseuro aus Betrag ableiten
-    const istHalbjahrRunde = (i === 0 && halbjahr) || (i === jahre.length - 1 && halbjahr);
-    let sollSatz;
-    if (isLast && a.verbleib === 'bleibt') {
-      sollSatz = bwStart > 0 ? round2(afaBetrag / bwStart * 100) : afaSatz;
-    } else if (istHalbjahrRunde) {
-      sollSatz = round2(afaSatz / 2);
-    } else {
-      sollSatz = afaSatz;
-    }
+    // AfA-Satz: immer 100/ND, bei Halbjahr im 1. und letzten Jahr halbiert
+    const istHalbjahr = (i === 0 && halbjahr) || (i === jahre.length - 1 && halbjahr);
+    const sollSatz = istHalbjahr ? round2(afaSatz / 2) : afaSatz;
     korrektRows.push({ jahr: jahre[i], bw1: bwStart, afaSatz: sollSatz, afa: afaBetrag, bw31: bwEnde, isLast, halbjahr: (i === 0 && halbjahr) || (i === jahre.length - 1 && halbjahr) });
     bwStart = bwEnde;
   }
