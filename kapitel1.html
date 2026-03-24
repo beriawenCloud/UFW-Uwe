@@ -169,7 +169,7 @@
       <div class="card-title">📝 Übungsbeispiel auswählen</div>
       <select class="aufgabe-select" id="afa-select" onchange="ladeAfaAufgabe()">
         <option value="">– Bitte wählen –</option>
-        <option value="0">1 – Kaffeemaschine (Bäckerei Tirol)</option>
+        <option value="0">1 – Drehmaschine (Bäckerei Tirol)</option>
         <option value="1">2 – Firmen-PKW (Autohaus Innsbruck)</option>
         <option value="2">3 – Server (IT-Solutions GmbH)</option>
         <option value="3">4 – Küchengerät (Hotel Alpenblick)</option>
@@ -422,8 +422,16 @@ function baueAfaTabelle() {
     // Im letzten Jahr bei Erinnerungseuro: AfA so anpassen dass BW 31.12. = € 1,–
     if (isLast && a.verbleib === 'bleibt') afaBetrag = round2(bwStart - 1);
     const bwEnde = isLast ? (a.verbleib === 'bleibt' ? 1 : 0) : round2(bwStart - afaBetrag);
-    // AfA-Satz aus tatsächlichem Betrag ableiten (wichtig bei Erinnerungseuro)
-    const sollSatz = bwStart > 0 ? round2(afaBetrag / bwStart * 100) : afaSatz;
+    // AfA-Satz: normal immer 100/ND, nur im letzten Jahr bei Erinnerungseuro aus Betrag ableiten
+    const istHalbjahrRunde = (i === 0 && halbjahr) || (i === jahre.length - 1 && halbjahr);
+    let sollSatz;
+    if (isLast && a.verbleib === 'bleibt') {
+      sollSatz = bwStart > 0 ? round2(afaBetrag / bwStart * 100) : afaSatz;
+    } else if (istHalbjahrRunde) {
+      sollSatz = round2(afaSatz / 2);
+    } else {
+      sollSatz = afaSatz;
+    }
     korrektRows.push({ jahr: jahre[i], bw1: bwStart, afaSatz: sollSatz, afa: afaBetrag, bw31: bwEnde, isLast, halbjahr: (i === 0 && halbjahr) || (i === jahre.length - 1 && halbjahr) });
     bwStart = bwEnde;
   }
