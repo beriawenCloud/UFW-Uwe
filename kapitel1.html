@@ -224,7 +224,7 @@
       <!-- Schritt 2: AfA Tabelle -->
       <div class="card">
         <div class="card-title">Schritt 2 – Abschreibungstabelle ausfüllen</div>
-        <p style="font-size:.88rem;color:var(--mid);margin-bottom:16px;">Trage die Werte Jahr für Jahr ein. Beachte: Kauf in der 2. Jahreshälfte → halbe AfA im ersten Jahr. Letzter Buchwert = <strong>€ 1,– (Erinnerungseuro)</strong>.</p>
+        <p style="font-size:.88rem;color:var(--mid);margin-bottom:16px;">Trage die Werte Jahr für Jahr ein. Beachte: Kauf in der 2. Jahreshälfte → halbe AfA im ersten Jahr. <span id="afa-verbleib-hint"></span></p>
         <div style="overflow-x:auto;">
           <table class="afa-table" id="afa-tabelle"></table>
         </div>
@@ -373,6 +373,15 @@ function ladeAfaAufgabe() {
   document.getElementById('aw-result').style.display = 'none';
   berechneterAW = 0;
   selectedYears = [];
+  // Verbleib-Hinweis setzen
+  const verbleibHint = document.getElementById('afa-verbleib-hint');
+  if (verbleibHint) {
+    if (aktAufgabe.verbleib === 'bleibt') {
+      verbleibHint.innerHTML = 'Die Anlage bleibt im Betrieb → letzter BW = <strong>€ 1,– (Erinnerungseuro)</strong>.';
+    } else {
+      verbleibHint.innerHTML = 'Die Anlage scheidet am Ende aus → letzter BW = <strong>€ 0,–</strong>.';
+    }
+  }
   // AW-Eingabe zurücksetzen, Schritte 2+3 verstecken
   const awEingabe = document.getElementById('aw-eingabe');
   if (awEingabe) { awEingabe.value = ''; awEingabe.classList.remove('correct','wrong'); }
