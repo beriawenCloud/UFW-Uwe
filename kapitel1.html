@@ -457,8 +457,12 @@ function baueAfaTabelle() {
   // Zeile 4: BW 31.12.
   html += `<tr><td style="font-weight:700;padding:10px 14px;background:#f0f8ff;border:1px solid #d0d0d0;white-space:nowrap;">BW 31.12. (€)</td>`;
   jahre.forEach((_, i) => {
-    const hint = korrektRows[i].isLast && a.verbleib === 'bleibt' ? ' title="Erinnerungseuro!"' : '';
-    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="number" step="0.01" placeholder="€" id="bw31-${i}" class="afa-input"${hint} style="width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;"></td>`;
+    const isErinnerung = korrektRows[i].isLast && a.verbleib === 'bleibt';
+    const bw31Placeholder = isErinnerung ? '€ 1,– !' : '€';
+    const bw31Style = isErinnerung
+      ? 'width:100%;padding:7px;border:1.5px solid #f0a500;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;background:#fffbe6;'
+      : 'width:100%;padding:7px;border:1.5px solid #ccc;border-radius:6px;font-family:Outfit,sans-serif;font-size:.88rem;text-align:center;outline:none;';
+    html += `<td style="padding:6px 8px;border:1px solid #d0d0d0;"><input type="number" step="0.01" placeholder="${bw31Placeholder}" id="bw31-${i}" class="afa-input" style="${bw31Style}"></td>`;
   });
   html += '</tr>';
 
