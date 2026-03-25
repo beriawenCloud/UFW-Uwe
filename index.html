@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UFW-Uwe ist übersiedelt!</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,300;0,400;1,300&display=swap');
+  :root { --space-dark: #020810; --alien-purple: #bf5fff; --accent-cyan: #00e5ff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--space-dark); font-family: 'Exo 2', sans-serif; color: #cce4ff; min-height: 100vh; overflow-x: hidden; }
+  .nebula { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 60% 40% at 15% 25%, rgba(30,10,70,0.6) 0%, transparent 70%), radial-gradient(ellipse 50% 60% at 85% 65%, rgba(10,30,60,0.5) 0%, transparent 70%), radial-gradient(ellipse 80% 30% at 50% 85%, rgba(20,0,50,0.4) 0%, transparent 70%); pointer-events: none; }
+  .planet { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; }
+  .planet-1 { width: 140px; height: 140px; bottom: -40px; right: -30px; background: radial-gradient(circle at 35% 35%, #3a1a6a, #12082a 60%, #06040f); box-shadow: inset -15px -10px 30px rgba(0,0,0,0.5), 0 0 30px rgba(80,20,150,0.3); opacity: 0.6; }
+  .planet-1::after { content: ''; position: absolute; top: 50%; left: 50%; width: 200px; height: 40px; border: 3px solid rgba(180,80,255,0.25); border-radius: 50%; transform: translate(-50%,-50%) rotate(-20deg); }
+  .planet-2 { width: 60px; height: 60px; top: 60px; left: -10px; background: radial-gradient(circle at 40% 30%, #1a3a6a, #060f22); opacity: 0.5; }
+  .shooting-star { position: fixed; width: 2px; height: 2px; background: white; border-radius: 50%; z-index: 0; }
+  .shooting-star::after { content: ''; position: absolute; top: 50%; right: 0; transform: translateY(-50%); width: 80px; height: 1px; background: linear-gradient(90deg, transparent, white); }
+  .shooting-star:nth-child(1) { top: 20%; animation: shoot 9s linear 1s infinite; }
+  .shooting-star:nth-child(2) { top: 55%; animation: shoot 11s linear 4s infinite; }
+  .shooting-star:nth-child(3) { top: 75%; animation: shoot 7s linear 8s infinite; }
+  @keyframes shoot { 0% { left: -100px; opacity: 1; } 70% { opacity: 1; } 100% { left: calc(100vw + 100px); opacity: 0; } }
+  canvas.starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .page { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+  .ufo-scene { position: relative; width: 340px; height: 320px; margin: 0 auto 1.5rem; }
+  .beam { position: absolute; left: 50%; top: 130px; transform: translateX(-50%); width: 0; height: 0; border-left: 55px solid transparent; border-right: 55px solid transparent; border-top: 130px solid rgba(191,95,255,0.2); filter: blur(6px); animation: beampulse 2s ease-in-out infinite; z-index: 2; }
+  @keyframes beampulse { 0%,100% { opacity: 0.6; border-top-color: rgba(191,95,255,0.18); } 50% { opacity: 1; border-top-color: rgba(191,95,255,0.38); } }
+  .ufo { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 160px; animation: ufo-hover 3s ease-in-out infinite; z-index: 4; filter: drop-shadow(0 0 18px rgba(191,95,255,0.6)); }
+  @keyframes ufo-hover { 0%,100% { top: 0px; } 50% { top: 14px; } }
+  .ufo-dome { width: 70px; height: 38px; background: radial-gradient(ellipse at 40% 30%, rgba(220,180,255,0.9), rgba(140,60,220,0.5) 60%, rgba(60,20,120,0.2)); border-radius: 50% 50% 0 0; margin: 0 auto; position: relative; z-index: 2; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3), 0 0 12px rgba(180,100,255,0.4); display: flex; align-items: center; justify-content: center; }
+  .dome-alien { font-size: 1.3rem; line-height: 1; position: relative; z-index: 3; margin-top: 4px; }
+  .ufo-body { width: 160px; height: 38px; background: linear-gradient(180deg, #5a3a7a 0%, #2e1a4a 40%, #180e28 100%); border-radius: 50%; margin: -8px auto 0; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 30px rgba(191,95,255,0.25); }
+  .ufo-rim { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); width: 180px; height: 14px; background: linear-gradient(180deg, #7a4a9a, #3a1a5a); border-radius: 50%; box-shadow: 0 0 20px rgba(191,95,255,0.5); }
+  .ufo-lights { position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); width: 160px; display: flex; justify-content: space-around; z-index: 5; }
+  .ufo-light { width: 8px; height: 8px; border-radius: 50%; animation: lightcycle 1.2s linear infinite; }
+  .ufo-light:nth-child(1) { background: #ff44ff; animation-delay: 0s; }
+  .ufo-light:nth-child(2) { background: #bf5fff; animation-delay: 0.2s; }
+  .ufo-light:nth-child(3) { background: #00e5ff; animation-delay: 0.4s; }
+  .ufo-light:nth-child(4) { background: #bf5fff; animation-delay: 0.6s; }
+  .ufo-light:nth-child(5) { background: #ff44ff; animation-delay: 0.8s; }
+  @keyframes lightcycle { 0%,100% { opacity:1; box-shadow:0 0 6px currentColor; } 50% { opacity:0.2; box-shadow:none; } }
+  .uwe-abducted { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 3; font-size: 3.5rem; animation: uwe-levitate 3s ease-in-out infinite; filter: drop-shadow(0 0 14px rgba(191,95,255,0.8)); }
+  @keyframes uwe-levitate { 0%,100% { bottom: 20px; transform: translateX(-50%) rotate(-4deg); } 50% { bottom: 38px; transform: translateX(-50%) rotate(4deg); } }
+  .sparkle { position: absolute; font-size: 1rem; animation: sparkle-spin 4s linear infinite; opacity: 0.8; }
+  .sparkle:nth-child(1) { top: 10px; right: 25px; animation-delay: 0s; }
+  .sparkle:nth-child(2) { top: 65px; left: 12px; animation-delay: 1.3s; font-size: 0.7rem; }
+  .sparkle:nth-child(3) { top: 18px; left: 35px; animation-delay: 2.5s; font-size: 1.2rem; }
+  @keyframes sparkle-spin { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.3); } 100% { transform: rotate(360deg) scale(1); } }
+  .alert-badge { display: inline-block; background: linear-gradient(90deg, rgba(191,95,255,0.15), rgba(0,229,255,0.12)); border: 1px solid rgba(191,95,255,0.5); color: var(--alien-purple); font-family: 'Orbitron', monospace; font-size: 0.7rem; letter-spacing: 0.25em; padding: 0.4em 1.2em; border-radius: 2em; margin-bottom: 1.2rem; animation: badge-glow 2s ease-in-out infinite; text-transform: uppercase; }
+  @keyframes badge-glow { 0%,100% { box-shadow: 0 0 8px rgba(191,95,255,0.3); } 50% { box-shadow: 0 0 22px rgba(191,95,255,0.65); } }
+  h1 { font-family: 'Orbitron', monospace; font-size: clamp(2rem, 6vw, 3.5rem); font-weight: 900; line-height: 1.1; margin-bottom: 0.5rem; background: linear-gradient(135deg, #ffffff 0%, var(--alien-purple) 50%, var(--accent-cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 20px rgba(191,95,255,0.4)); animation: title-shimmer 4s ease-in-out infinite; }
+  @keyframes title-shimmer { 0%,100% { filter: drop-shadow(0 0 20px rgba(191,95,255,0.4)); } 50% { filter: drop-shadow(0 0 35px rgba(0,229,255,0.5)); } }
+  .subtitle { font-size: 1.05rem; color: rgba(168,216,255,0.8); font-style: italic; margin-bottom: 2.5rem; font-weight: 300; letter-spacing: 0.05em; }
+  .info-box { background: linear-gradient(135deg, rgba(15,8,30,0.95), rgba(5,3,15,0.98)); border: 1px solid rgba(191,95,255,0.25); border-radius: 16px; padding: 2rem 2.5rem; max-width: 540px; width: 100%; margin: 0 auto 2rem; position: relative; box-shadow: 0 0 40px rgba(191,95,255,0.08), inset 0 1px 0 rgba(255,255,255,0.04); }
+  .info-box::before { content: ''; position: absolute; inset: -1px; border-radius: 16px; padding: 1px; background: linear-gradient(135deg, rgba(191,95,255,0.35), rgba(0,229,255,0.2), rgba(191,95,255,0.1)); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: destination-out; mask-composite: exclude; pointer-events: none; }
+  .info-text { font-size: 1.05rem; line-height: 1.8; color: #b8d0f0; margin-bottom: 1.5rem; }
+  .info-text strong { color: #e8f0ff; font-weight: 400; }
+  .cta-btn { display: inline-flex; align-items: center; gap: 0.7em; background: linear-gradient(135deg, rgba(191,95,255,0.12), rgba(0,229,255,0.10)); border: 1.5px solid rgba(191,95,255,0.6); color: var(--alien-purple); font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.1em; padding: 1em 2.2em; border-radius: 3em; text-decoration: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(191,95,255,0.15); text-transform: uppercase; animation: cta-pulse 3s ease-in-out infinite; }
+  @keyframes cta-pulse { 0%,100% { box-shadow: 0 0 20px rgba(191,95,255,0.15); } 50% { box-shadow: 0 0 40px rgba(191,95,255,0.45); } }
+  .cta-btn:hover { background: linear-gradient(135deg, rgba(191,95,255,0.28), rgba(0,229,255,0.18)); box-shadow: 0 0 50px rgba(191,95,255,0.55); transform: translateY(-2px) scale(1.03); border-color: var(--alien-purple); color: #ffffff; }
+  .cta-btn:hover .arrow { transform: translateX(5px); }
+  .arrow { display: inline-block; transition: transform 0.3s ease; }
+  .coordinates { font-family: 'Orbitron', monospace; font-size: 0.62rem; color: rgba(191,95,255,0.4); letter-spacing: 0.15em; margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.04); }
+</style>
+</head>
+<body>
+<div class="nebula"></div>
+<div class="planet planet-1"></div>
+<div class="planet planet-2"></div>
+<div class="shooting-star"></div>
+<div class="shooting-star"></div>
+<div class="shooting-star"></div>
+<canvas class="starfield" id="stars"></canvas>
+<main class="page">
+  <div class="alert-badge">👽 Galaktische Eilmeldung</div>
+  <div class="ufo-scene">
+    <span class="sparkle">✦</span>
+    <span class="sparkle">✧</span>
+    <span class="sparkle">✦</span>
+    <div class="ufo">
+      <div class="ufo-dome"><span class="dome-alien">👽</span></div>
+      <div class="ufo-body">
+        <div class="ufo-rim"></div>
+      </div>
+      <div class="ufo-lights">
+        <div class="ufo-light"></div><div class="ufo-light"></div><div class="ufo-light"></div><div class="ufo-light"></div><div class="ufo-light"></div>
+      </div>
+    </div>
+    <div class="beam"></div>
+    <div class="uwe-abducted">👽</div>
+  </div>
+  <h1>UFW-Uwe<br>ist übersiedelt!</h1>
+  <p class="subtitle">Erfolgreich ins galaktische Universum umgezogen 🪐</p>
+  <div class="info-box">
+    <p class="info-text">
+      Keine Sorge! Uwe wurde von seinen <strong>galaktischen Freunden</strong> abgeholt
+      und hat eine neue Heimat gefunden. 🌌<br><br>
+      Die neue galaktische Adresse lautet:
+    </p>
+    <a href="https://www.ufw-uwe-gallaktisch.org" class="cta-btn">
+      👽 Zu Uwe fliegen <span class="arrow">→</span>
+    </a>
+    <div style="margin-top:1.2rem;font-size:0.9rem;color:rgba(191,95,255,0.5);font-family:'Orbitron',monospace;letter-spacing:0.08em;">
+      www.ufw-uwe-gallaktisch.org
+    </div>
+  </div>
+  <div class="coordinates">KOORDINATEN: GALLAKTISCH-SEKTOR 7 · UWE-NEXUS ONLINE · ÜBERSIEDLUNG ERFOLGREICH</div>
+</main>
+<script>
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  function resize() {
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const count = Math.floor((canvas.width * canvas.height) / 3000);
+    for (let i = 0; i < count; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*1.5, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${0.2+Math.random()*0.8})`;
+      ctx.fill();
+    }
+  }
+  window.addEventListener('resize', resize); resize();
+  document.addEventListener('mousemove', (e) => {
+    const dx = (e.clientX - window.innerWidth/2) / window.innerWidth;
+    const dy = (e.clientY - window.innerHeight/2) / window.innerHeight;
+    document.querySelector('.ufo-scene').style.transform = `translateX(${dx*8}px) translateY(${dy*5}px)`;
+  });
+</script>
+</body>
+</html>
